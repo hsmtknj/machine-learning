@@ -1,7 +1,10 @@
 # directories
-./.vscode/
-./.DS_Store/
+/.vscode/
+/src/__pycache__/
+/results/
 
 # files
-./.gitignore
-./src/playground
+/.DS_Store
+/src/playground.py
+
+
