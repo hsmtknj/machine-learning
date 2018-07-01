@@ -14,7 +14,6 @@ train with model
 from keras.datasets import mnist
 import numpy as np
 import model
-import matplotlib.pyplot as plt
 from keras.utils import to_categorical
 import os
 
@@ -64,7 +63,7 @@ def train(data, dir_name='results/model'):
     # =================================================
     epochs = 20
     batch_size = 100
-    latent_dim = 3
+    latent_dim = 2
     intermediate_dim = 300
     dropout_keep_prob = 1.0
 
@@ -107,50 +106,7 @@ def train(data, dir_name='results/model'):
     return cvae_model, encoder_model, generator_model
 
 
-def gen_number(x_test, y_test, encoder, generator, dir_name='results/gen'):
-    '''
-    generating a number using a generator trained on MNIST and test data set.
-        :param x_test    : ndarray, pictures of test data
-        :param y_test    : ndarray, labels of test data
-        :param encoder   : model object, encoder model to map a test data to latent space
-        :param generator : model object, generator model
-        :param dir_name  : str, path of directory to save generated pictures
-    '''
-    if not os.path.exists(dir_name):
-        os.makedirs(dir_name)
-
-    n = 10           # size of class
-    digit_size = 28  # pixel resolution
-
-    figure = np.zeros((digit_size * n, digit_size * (n + 1)))
-
-    for i in range(n):
-        x = x_test[i]  # [1, 784]
-        y = y_test[i]  # [1, 10]
-
-        figure[i * digit_size: (i+1) * digit_size, 0: digit_size] = x.reshape(digit_size, digit_size)
-
-        # z_encoded stand for charasterictic of input data
-        z_encoded = encoder.predict([np.array([x]), np.array([y])])
-
-        labels = np.array([np.zeros(shape=(n)) + x for x in range(n)])
-        labels = to_categorical(labels)
-
-        for j in range(len(labels)):
-            label = labels[j]
-            x_decoded = generator.predict([z_encoded, label])
-            digit = x_decoded[0].reshape(digit_size, digit_size)
-            figure[i * digit_size: (i + 1) * digit_size, (j+1) * digit_size: (j + 2) * digit_size] = digit
-
-    plt.figure(figsize=(10, 10))
-    plt.imshow(figure)
-    plt.savefig('{}/plot_gen'.format(dir_name))
-    plt.close()
-
-
 if __name__ == '__main__':
-
+    # load data and train
     data = x_train, y_train, x_test, y_test, input_dim, class_num = load_preproc_data()
-    cvae_model, encoder, generator = train(data)
-
-    gen_number(x_test, y_test, encoder, generator)
+    cvae_model, encoder, generator = train(data, 'results/model')
