@@ -48,7 +48,7 @@ def load_preproc_data(data='mnist'):
         raise NotImplementedError
 
 
-def train(latent_dim, data, dir_name='results/model'):
+def train(data, dir_name='results/model'):
     '''
     train with Conditional VAE on MNIST
         :param latent_dim : int, dimension of latent space
@@ -60,12 +60,18 @@ def train(latent_dim, data, dir_name='results/model'):
         os.makedirs(dir_name)
 
     # =================================================
-    # training 
-    # =================================================
-
     # parameters setting
+    # =================================================
     epochs = 20
     batch_size = 100
+    latent_dim = 3
+    intermediate_dim = 300
+    dropout_keep_prob = 1.0
+
+
+    # =================================================
+    # training 
+    # =================================================
 
     # define model and fit
     x_train, y_train, x_test, y_test, input_dim, class_num = data
@@ -101,82 +107,30 @@ def train(latent_dim, data, dir_name='results/model'):
     return cvae_model, encoder_model, generator_model
 
 
-def plot_manifold(generator, dir_name='results/manifold'):
-    '''
-    plot a number on 2D manifold
-        :param generator : model object, model of generator
-        :param dir_name  : str, path of directory for saving figs
-    '''
-    if not os.path.exists(dir_name):
-        os.makedirs(dir_name)
-
-    epsilon_std = 0.2
-
-    # display a 2D manifold of the digits
-    n = 15  # figure with 15x15 digits
-    digit_size = 28
-
-    figure = np.zeros((digit_size * n, digit_size * n))
-    # we will sample n points within [-15, 15] standard deviations
-    grid_x = np.linspace(-15, 15, n)
-    grid_y = np.linspace(-15, 15, n)
-
-    labels = np.array([np.zeros(shape=(n * n)) + x for x in range(10)])
-    labels = to_categorical(labels)
-
-    for i in range(len(labels)):
-        label = labels[i]
-        for j, yi in enumerate(grid_x):
-            for k, xi in enumerate(grid_y):
-                z_sample = np.array([[xi, yi]]) * epsilon_std
-                x_decoded = generator.predict([z_sample, label])
-                digit = x_decoded[0].reshape(digit_size, digit_size)
-                figure[j * digit_size: (j + 1) * digit_size,
-                k * digit_size: (k + 1) * digit_size] = digit
-
-        plt.figure(figsize=(10, 10))
-        plt.imshow(figure)
-        plt.savefig('{}/plot_{}'.format(dir_name, i))
-        plt.close()
-
-    z2 = labels[7] + labels[9]
-    for j, yi in enumerate(grid_x):
-        for k, xi in enumerate(grid_y):
-            z_sample = np.array([[xi, yi]]) * epsilon_std
-            x_decoded = generator.predict([z_sample, z2])
-            digit = x_decoded[0].reshape(digit_size, digit_size)
-            figure[j * digit_size: (j + 1) * digit_size,
-            k * digit_size: (k + 1) * digit_size] = digit
-
-    plt.figure(figsize=(10, 10))
-    plt.imshow(figure)
-    plt.savefig('{}/plot_{}and{}'.format(dir_name, 7, 9))
-    plt.close()
-
-
 def gen_number(x_test, y_test, encoder, generator, dir_name='results/gen'):
     '''
     generating a number using a generator trained on MNIST and test data set.
-    :param x_test: ndarray, pictures of test data
-    :param y_test: ndarray, labels of test data
-    :param encoder: model object, encoder model to map a test data to latent space
-    :param generator: model object, generator model
-    :param dir_name: str, path of directory to save generated pictures
+        :param x_test    : ndarray, pictures of test data
+        :param y_test    : ndarray, labels of test data
+        :param encoder   : model object, encoder model to map a test data to latent space
+        :param generator : model object, generator model
+        :param dir_name  : str, path of directory to save generated pictures
     '''
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)
 
-    n = 10
-    digit_size = 28
+    n = 10           # size of class
+    digit_size = 28  # pixel resolution
 
     figure = np.zeros((digit_size * n, digit_size * (n + 1)))
 
     for i in range(n):
-        x = x_test[i]
-        y = y_test[i]
+        x = x_test[i]  # [1, 784]
+        y = y_test[i]  # [1, 10]
 
         figure[i * digit_size: (i+1) * digit_size, 0: digit_size] = x.reshape(digit_size, digit_size)
 
+        # z_encoded stand for charasterictic of input data
         z_encoded = encoder.predict([np.array([x]), np.array([y])])
 
         labels = np.array([np.zeros(shape=(n)) + x for x in range(n)])
@@ -196,10 +150,7 @@ def gen_number(x_test, y_test, encoder, generator, dir_name='results/gen'):
 
 if __name__ == '__main__':
 
-    latent_dim = 2
     data = x_train, y_train, x_test, y_test, input_dim, class_num = load_preproc_data()
-    cvae_model, encoder, generator = train(latent_dim, data)
-
-    plot_manifold(generator)
+    cvae_model, encoder, generator = train(data)
 
     gen_number(x_test, y_test, encoder, generator)
