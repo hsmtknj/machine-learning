@@ -1,10 +1,24 @@
+# ========================
 # directories
+# ========================
 /.vscode/
+
 /cvae/src/__pycache__/
 /cvae/results/
 
+/vae/src/__pycache__/
+/vae/results/
+
+
+# ========================
 # files
+# ========================
 /.DS_Store
+
 /cvae/.DS_Store
 /cvae/src/.DS_Store
 /cvae/src/playground.py
+
+/vae/.DS_Store
+/vae/src/.DS_Store
+/vae/src/playground.py

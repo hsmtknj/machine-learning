@@ -74,14 +74,14 @@ def train(data, dir_name='results/model'):
 
     # define model and fit
     x_train, y_train, x_test, y_test, input_dim, class_num = data
-    model_instance = model.ModelCVAE(class_num, input_dim, latent_dim)
-    cvae_model, encoder_model, generator_model = model_instance.get_simple_cvae()
+    model_instance = model.ModelVAE(input_dim, latent_dim)
+    vae_model, encoder_model, generator_model = model_instance.get_simple_vae()
 
-    cvae_model.fit([x_train, y_train], x_train,
+    vae_model.fit( x_train, x_train,
                    shuffle=True,
                    epochs=epochs,
                    batch_size=batch_size,
-                   validation_data=([x_test, y_test], x_test))
+                   validation_data=(x_test, x_test) )
 
 
     # =================================================
@@ -89,13 +89,13 @@ def train(data, dir_name='results/model'):
     # =================================================
 
     # save cvae models and weights
-    cvae_model.save('{}/{}.h5'.format(dir_name, 'cvae_model'))
-    cvae_model.save_weights('{}/{}.h5'.format(dir_name, 'cvae_model_weight'))
+    vae_model.save('{}/{}.h5'.format(dir_name, 'vae_model'))
+    vae_model.save_weights('{}/{}.h5'.format(dir_name, 'vae_model_weight'))
 
     # set cvae model weights to encder and generator model
     # This part is unnecessary, isn't it?
-    encoder_model.load_weights('{}/{}.h5'.format(dir_name, 'cvae_model_weight'), by_name=True)
-    generator_model.load_weights('{}/{}.h5'.format(dir_name, 'cvae_model_weight'), by_name=True)
+    encoder_model.load_weights('{}/{}.h5'.format(dir_name, 'vae_model_weight'), by_name=True)
+    generator_model.load_weights('{}/{}.h5'.format(dir_name, 'vae_model_weight'), by_name=True)
 
     # save encoder and generator model
     encoder_model.save('{}/{}.h5'.format(dir_name, 'encoder_model'))
@@ -103,10 +103,10 @@ def train(data, dir_name='results/model'):
     generator_model.save('{}/{}.h5'.format(dir_name, 'generator_model'))
     generator_model.save_weights('{}/{}.h5'.format(dir_name, 'generator_model_weight'))
 
-    return cvae_model, encoder_model, generator_model
+    return vae_model, encoder_model, generator_model
 
 
 if __name__ == '__main__':
     # load data and train
     data = x_train, y_train, x_test, y_test, input_dim, class_num = load_preproc_data()
-    cvae_model, encoder_model, generator_model = train(data, 'results/model')
+    vae_model, encoder_model, generator_model = train(data, 'results/model')

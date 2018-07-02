@@ -8,7 +8,7 @@ This software is released under the MIT License.
 http://opensource.org/licenses/mit-license.php
 
 [Modele Description]
-define model class (Conditional Variational AutoEncoder)
+define model class (Variational AutoEncoder)
 """
 
 from keras.models import Model
@@ -17,18 +17,16 @@ from keras import backend as K
 from keras.metrics import binary_crossentropy
 
 
-class ModelCVAE(object):
+class ModelVAE(object):
 
-    def __init__(self, class_num, input_dim, latent_dim=100, intermediate_dim=300, dropout_keep_prob=1.0):
+    def __init__(self, input_dim, latent_dim=100, intermediate_dim=300, dropout_keep_prob=1.0):
         """
-        Conditional Variational AutoEncoder(CVAE) Class
-            :param class_num         : int, the number of classes
+        Variational AutoEncoder(VAE) Class
             :param input_dim         : int, dimension of input (1d array)
             :param latent_dim        : int, dimension of latent variable
             :param intermediate_dim  : int, dimension of hidden layer in encoder and decoder
             :param dropout_keep_prob : float, probability of using a node (Default is 1.0, without Dropout)
         """
-        self.class_num = class_num
         self.latent_dim = latent_dim
         self.input_dim = input_dim
         self.output_dim = input_dim
@@ -53,10 +51,10 @@ class ModelCVAE(object):
         sampling_value = mean + K.exp(log_sigma) * epsilon
         return sampling_value
 
-    def _build_cvae_model(self):
+    def _build_vae_model(self):
         """
-        build cvae model
-            :return: cvae_model, encoder_model, decoder_model
+        build vae model
+            :return: vae_model, encoder_model, decoder_model
         """
 
         # =================================================
@@ -82,11 +80,9 @@ class ModelCVAE(object):
         # make input layer using Input() by concatenating two layers
         # NOTE: if you'd like to input actual data, you need to define a layer using Input()
         x = Input(shape=(self.input_dim,))  # features
-        y = Input(shape=(self.class_num,))  # label
-        input_layer = Concatenate(name='input')([x, y])
 
         # ENCODER: HIDDEN LAYER
-        enc_hidden_layer = enc_drop(enc_dense(input_layer))
+        enc_hidden_layer = enc_drop(enc_dense(x))
         self.mean_layer = enc_mean(enc_hidden_layer)
         self.log_sigma_layer = enc_log_sigma(enc_hidden_layer)
 
@@ -94,22 +90,19 @@ class ModelCVAE(object):
         # get sample value using reparameterization trick for back propagation
         latent_layer = Lambda(self._sampling)([self.mean_layer, self.log_sigma_layer])
 
-        # DECODER: MERGED LAYER
-        dec_merged = Concatenate(name='dec_merged')([latent_layer, y])
-
         # DECODER: HIDDEN LAYER
-        dec_hidden_layer = dec_dense(dec_merged)
+        dec_hidden_layer = dec_dense(latent_layer)
 
         # DECODER: OUTPUT LAYER
         output_layer = dec_out(dec_hidden_layer)
 
 
         # =================================================
-        # define cvae model and encoder model
+        # define vae model and encoder model
         # =================================================
 
-        cvae_model = Model([x, y], output_layer)
-        encoder_model = Model([x, y], self.mean_layer)
+        vae_model = Model(x, output_layer)
+        encoder_model = Model(x, self.mean_layer)
 
 
         # =================================================
@@ -118,18 +111,17 @@ class ModelCVAE(object):
 
         # network architecuture of generator model
         z = Input(shape=(self.latent_dim,))
-        gen_merged_layer = Concatenate(name='gen_merged')([z, y])
-        gen_hidden_layer = dec_dense(gen_merged_layer)
+        gen_hidden_layer = dec_dense(z)
         gen_output_layer = dec_out(gen_hidden_layer)
 
         # define generator model
-        generator_model = Model([z, y], gen_output_layer)
+        generator_model = Model(z, gen_output_layer)
 
-        return cvae_model, encoder_model, generator_model
+        return vae_model, encoder_model, generator_model
 
     def _vae_loss(self, x, x_decoded):
         '''
-        loss function for CVAE
+        loss function for VAE
             :param x         : keras tensor object, input vector to be reconstructed.
             :param x_decoded : keras tensor object, output vector of decoder.
             :return: loss    : reconstruction error + kullback-leibler divergence
@@ -141,13 +133,13 @@ class ModelCVAE(object):
         loss = reconstruction_error + kld
         return loss
 
-    def get_simple_cvae(self):
+    def get_simple_vae(self):
         '''
-        build a simple conditional VAE
+        build a simple VAE
             :return: tuple of models, (CVAE model, encoder model, decoder model)
         '''
-        cvae_model, encoder_model, generator_model = self._build_cvae_model()
-        cvae_model.compile(optimizer='rmsprop', loss=self._vae_loss)
+        vae_model, encoder_model, generator_model = self._build_vae_model()
+        vae_model.compile(optimizer='rmsprop', loss=self._vae_loss)
 
-        return cvae_model, encoder_model, generator_model
+        return vae_model, encoder_model, generator_model
     
