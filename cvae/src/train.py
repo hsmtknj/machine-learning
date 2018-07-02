@@ -47,7 +47,7 @@ def load_preproc_data(data='mnist'):
         raise NotImplementedError
 
 
-def train(data, dir_name='results/model'):
+def train(data, dir_name='cvae/results/model'):
     '''
     train with Conditional VAE on MNIST
         :param latent_dim : int, dimension of latent space
@@ -109,4 +109,4 @@ def train(data, dir_name='results/model'):
 if __name__ == '__main__':
     # load data and train
     data = x_train, y_train, x_test, y_test, input_dim, class_num = load_preproc_data()
-    cvae_model, encoder_model, generator_model = train(data, 'results/model')
+    cvae_model, encoder_model, generator_model = train(data, 'cvae/results/model')

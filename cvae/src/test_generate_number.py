@@ -21,7 +21,7 @@ from keras.models import load_model
 import train
 
 
-def gen_number(x_test, y_test, encoder, generator, dir_name='results/gen'):
+def gen_number(x_test, y_test, encoder, generator, dir_name='cvae/results/gen'):
     '''
     generating a number using a generator trained on MNIST and test data set.
         :param x_test    : ndarray, pictures of test data
@@ -65,6 +65,6 @@ def gen_number(x_test, y_test, encoder, generator, dir_name='results/gen'):
 if __name__ == '__main__':
     # load model and generate number
     x_train, y_train, x_test, y_test, input_dim, class_num = train.load_preproc_data()
-    encoder = load_model("results/model/encoder_model.h5")
-    generator = load_model("results/model/generator_model.h5")
+    encoder = load_model("cvae/results/model/encoder_model.h5")
+    generator = load_model("cvae/results/model/generator_model.h5")
     gen_number(x_test, y_test, encoder, generator)    
