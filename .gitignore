@@ -1,9 +1,9 @@
 # directories
 /.vscode/
-/src/__pycache__/
-/results/
+/cvae/src/__pycache__/
+/cvae/results/
 
 # files
-/.DS_Store
-/src/.DS_Store
-/src/playground.py
+/cvae/.DS_Store
+/cvae/src/.DS_Store
+/cvae/src/playground.py
