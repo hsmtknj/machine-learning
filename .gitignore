@@ -4,6 +4,7 @@
 /cvae/results/
 
 # files
+/.DS_Store
 /cvae/.DS_Store
 /cvae/src/.DS_Store
 /cvae/src/playground.py
