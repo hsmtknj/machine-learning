@@ -9,6 +9,8 @@
 /vae/src/__pycache__/
 /vae/results/
 
+/data_analysis/.vscode/
+
 
 # ========================
 # files
