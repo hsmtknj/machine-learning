@@ -3,11 +3,11 @@
 # ========================
 /.vscode/
 
-/cvae/src/__pycache__/
-/cvae/results/
+/newralnet/cvae/src/__pycache__/
+/newralnet/cvae/results/
 
-/vae/src/__pycache__/
-/vae/results/
+/newralnet/vae/src/__pycache__/
+/newralnet/vae/results/
 
 /data_analysis/.vscode/
 
@@ -17,10 +17,10 @@
 # ========================
 /.DS_Store
 
-/cvae/.DS_Store
-/cvae/src/.DS_Store
-/cvae/src/playground.py
+/newralnet/cvae/.DS_Store
+/newralnet/cvae/src/.DS_Store
+/newralnet/cvae/src/playground.py
 
-/vae/.DS_Store
-/vae/src/.DS_Store
-/vae/src/playground.py
+/newralnet/vae/.DS_Store
+/newralnet/vae/src/.DS_Store
+/newralnet/vae/src/playground.py
