@@ -1,5 +1,5 @@
-# ml
-This project is for learning "Machine Learning".
+# Machine Learning with Python
+This project is for learning "Machine Learning" with Python.
 
 ## newralnet directory
 
