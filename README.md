@@ -1,7 +1,7 @@
 # Machine Learning with Python
 This project is for learning "Machine Learning" with Python.
 
-## newralnet directory
+## neuralnet directory
 
 Implementation of the following Neural Networks.  
 And each directory has the source code about that.
