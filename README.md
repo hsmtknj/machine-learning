@@ -12,7 +12,7 @@ And each directory has the source code about that.
 
 ## data_analysis directory
 
-This directory has source code which is related to ways to analyse data or something.
+This directory has source codes for analysis.
 
 
 ## About License
