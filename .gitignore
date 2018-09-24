@@ -3,11 +3,11 @@
 # ========================
 /.vscode/
 
-/newralnet/cvae/src/__pycache__/
-/newralnet/cvae/results/
+/neuralnet/cvae/src/__pycache__/
+/neuralnet/cvae/results/
 
-/newralnet/vae/src/__pycache__/
-/newralnet/vae/results/
+/neuralnet/vae/src/__pycache__/
+/neuralnet/vae/results/
 
 /data_analysis/.vscode/
 
@@ -17,10 +17,10 @@
 # ========================
 /.DS_Store
 
-/newralnet/cvae/.DS_Store
-/newralnet/cvae/src/.DS_Store
-/newralnet/cvae/src/playground.py
+/neuralnet/cvae/.DS_Store
+/neuralnet/cvae/src/.DS_Store
+/neuralnet/cvae/src/playground.py
 
-/newralnet/vae/.DS_Store
-/newralnet/vae/src/.DS_Store
-/newralnet/vae/src/playground.py
+/neuralnet/vae/.DS_Store
+/neuralnet/vae/src/.DS_Store
+/neuralnet/vae/src/playground.py
