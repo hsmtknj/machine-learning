@@ -27,7 +27,7 @@ def deriv_tanh(x):
 
 def load_preproc_data(data='mnist'):
     '''
-    load training and test data and tailor data for CVAE
+    load training and test data and preprocess data
         :param data : str, name of data
         :return     : training and test data, input dimension, class number
     '''
