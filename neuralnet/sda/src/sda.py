@@ -15,7 +15,7 @@ random_state = 50
 
 
 # =============================================================================
-# load data (mnist)
+# Load Data (MNIST)
 # =============================================================================
 
 mnist = input_data.read_data_sets('MNIST_data/', one_hot=True)
@@ -99,7 +99,7 @@ X = np.copy(train_X)
 epochs =  20
 n_batches = 5
 batch_size = train_X.shape[0] // n_batches
-learning_ratio = 0.00001
+learning_ratio = 0.01
 corruption_level = np.float(0.3)
 
 sess = tf.Session()
@@ -143,7 +143,7 @@ x_input = x_input * noise_training
 epochs =  100
 n_batches = 5
 batch_size = train_X.shape[0] // n_batches
-learning_ratio = 0.00001
+learning_ratio = 0.01
 corruption_level = np.float(0.3)
 
 # training model
