@@ -42,9 +42,7 @@ if __name__ == '__main__':
     # convert one-hot
     train_y = np.eye(10)[train_y]
     valid_y = np.eye(10)[valid_y]
-
-    # TODO: 
-
+    
 
     # =========================================================================
     # Define Part of Tensorflow
