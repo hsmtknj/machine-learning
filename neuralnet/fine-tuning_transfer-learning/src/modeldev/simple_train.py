@@ -21,6 +21,7 @@ sys.path.append(parent_dir)
 
 #* Import my Libraries *#
 from mylib import utils
+from mylib import preproc_utils
 from modeldev import d_layer
 from modeldev import d_model
 from modeldev import d_loss_func
@@ -52,24 +53,33 @@ def simple_train_main():
 
     # load data
     dirname = parent_parent_dir + '/data/dataset'
-    data_X, data_y = utils.load_dataset_X_y(dirname)
+    df_X, df_y = utils.load_dataset_X_y(dirname, 'pd')
 
     # ======================================================================= #
     # Data Preprocesing
     # ======================================================================= #
 
-    # TODO: data preprocessing for all data
+    # data preprocessing for all data
+    # NOTE: do nothing curretly
+    df_X = preproc_utils.data_preproc_base(df_X)
 
     # split into train, test and valid data
-    train_X, test_X, valid_X, train_y, test_y, valid_y = utils.train_test_valid_split(data_X,
-                                                                                      data_y,
-                                                                                      test_size=test_size_ratio,
-                                                                                      valid_size=valid_size_ratio,
-                                                                                      random_state=random_state)
+    split_data = preproc_utils.train_test_valid_split(df_X,
+                                                      df_y,
+                                                      test_size=test_size_ratio,
+                                                      valid_size=valid_size_ratio,
+                                                      random_state=random_state)
+    df_train_X, df_test_X, df_valid_X, df_train_y, df_test_y, df_valid_y = split_data
 
-    # TODO: data preprocessing for split data
+    # data preprocessing for split data
+    split_data = preproc_utils.data_preproc_split(df_train_X, 
+                                                  df_valid_X,
+                                                  df_test_X)
+    df_train_X, df_valid_X, df_test_X = split_data
 
-    # TODO: data preprocessing for train data
+    # data preprocessing for train data
+    df_train_X, df_train_y = preproc_utils.data_preproc_train(df_train_X,
+                                                              df_train_y)
 
 
     # ======================================================================= #
@@ -94,10 +104,13 @@ def simple_train_main():
     sess = tf.Session()
     init = tf.global_variables_initializer()
     sess.run(init)
-    sess = model.fit(sess, train_X, train_y, valid_X, valid_y)
-    pred = model.predict(sess, test_X)
 
-    error = np.mean((test_y - pred)**2)
+    # train
+    sess = model.fit(sess, df_train_X.values, df_train_y.values,
+                           df_valid_X.values, df_valid_y.values)
+    pred = model.predict(sess, df_test_X.values)
+
+    error = np.mean((df_test_y.values - pred)**2)
     print('ERROR:{}'.format(error))
 
     print('END')

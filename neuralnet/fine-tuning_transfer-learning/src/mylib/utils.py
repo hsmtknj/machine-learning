@@ -1,5 +1,9 @@
 # coding: utf-8
 
+"""
+General Utilities Module
+"""
+
 # register src directory path to PYTHONPATH
 import sys
 from os import path, pardir
@@ -11,7 +15,6 @@ sys.path.append(parent_dir)
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from sklearn.model_selection import train_test_split
 
 from modeldev import d_layer
 from modeldev import d_model
@@ -121,47 +124,12 @@ def convert_ind_to_boolind(ind_vec, bool_list_length):
         return out_vec
     
 
-def normalize_feature(in_df, str_norm_target_col, abs_max_num):
-    """
-    normalize designated column
-    e.g.
-        normalize col with max "60"
-           [20, 30, 70, 65, -90]
-        -> [0.333..., 0.5, 1.0, 1.0, -1.0]
-    
-    :param  in_df               : pandas.DataFrame, 
-    :param  str_norm_target_col : string, 
-    :param  abs_max_num         : float, absolute max number (normalize col with this number)
-    :return out_df              : pandas.DataFrame
-    """
-
-    assert(abs_max_num > 0), (
-        'Please set positive number in "abs_max_num".'
-    )
-
-    # find target exceeding abs_max_num and overwrite the num with abs_max_num
-    df = in_df
-
-    # positive
-    cond = (df.loc[:, str_norm_target_col] >= abs_max_num)
-    df.loc[cond, str_norm_target_col] = abs_max_num
-
-    # negative
-    cond = (df.loc[:, str_norm_target_col] <= -abs_max_num)
-    df.loc[cond, str_norm_target_col] = -abs_max_num
-    
-    # normalization
-    df.loc[:, str_norm_target_col] = df.loc[:, str_norm_target_col] / abs_max_num
-
-    out_df = df
-    return out_df
-
-
-def load_dataset_X_y(dirname):
+def load_dataset_X_y(dirname, opt):
     """
     load training data
 
     :param  : dirname : str, loading target directory
+    :param  : opt     : str, option data format "pandas" or "numpy"
     :return : data_X  : numpy, training data
     :return : data_y  : numpy, true data
     """
@@ -169,14 +137,15 @@ def load_dataset_X_y(dirname):
     # X
     input_filename = dirname + '/data_X.csv'
     df_X = pd.read_csv(input_filename, encoding='shift-jis')
-    data_X = df_X.values
 
     # y
     input_filename = dirname + '/data_y.csv'
     df_y = pd.read_csv(input_filename, encoding='shift-jis')
-    data_y = df_y.values
 
-    return data_X, data_y
+    if (opt == 'pd'):
+        return df_X, df_y
+    elif (opt == 'np'):
+        return df_X.values, df_y.values
 
 
 def translate_contents_without_string(input):
@@ -208,36 +177,3 @@ def translate_contents_without_string(input):
             return output_list
     else:
         print('Please input str or "list" including "str".')
-
-
-def train_test_valid_split(data_X, data_y, test_size, valid_size, random_state):
-    """
-    split data into "train", "test" and "valid" data
-    e.g. total_data = 10000, test_size = 0.1, valid_size = 0.1
-            train_data = 8000
-            test_data = 1000
-            valid_data = 1000
-
-    :param  data_X       : split target data X
-    :param  data_y       : split target data y
-    :param  test_size    : test size ratio (0.0 - 1.0)
-    :param  valid_size   : valid size ratio (0.0 - 1.0)
-    :param  random_state : random seed
-    :return split data   : 
-    """
-
-    # split data into test data
-    test_data_size = test_size
-    train_X, test_X, train_y, test_y = train_test_split(data_X,
-                                                        data_y,
-                                                        test_size=test_data_size,
-                                                        random_state=random_state)
-    # split data into valid data
-    valid_data_size = valid_size / (1 - test_size)
-    train_X, valid_X, train_y, valid_y = train_test_split(train_X,
-                                                           train_y,
-                                                           test_size=valid_data_size,
-                                                           random_state=random_state)
-
-    return train_X, test_X, valid_X, train_y, test_y, valid_y
-
