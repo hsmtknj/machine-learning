@@ -1,0 +1,2 @@
+model_checkpoint_path: "/Users/khashimoto/tech/git/machine-learning/neuralnet/fine-tuning_transfer-learning/data/results/result/model_sess.ckpt"
+all_model_checkpoint_paths: "/Users/khashimoto/tech/git/machine-learning/neuralnet/fine-tuning_transfer-learning/data/results/result/model_sess.ckpt"

@@ -15,6 +15,8 @@ sys.path.append(parent_dir)
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+import pickle
+import os
 
 from modeldev import d_layer
 from modeldev import d_model
@@ -177,3 +179,26 @@ def translate_contents_without_string(input):
             return output_list
     else:
         print('Please input str or "list" including "str".')
+
+
+def save_result(sess, model, out_dirpath):
+    """
+    save training result (tf.Session and model)
+
+    :param  sess       : tf.Session()
+    :param  model      : d_model.Model()
+    :param  out_dirpath: str, directory path to save results
+    :return
+    """
+    if (not os.path.isdir(out_dirpath)):
+        os.makedirs(out_dirpath)
+
+    # save tf.Session()
+    saver = tf.train.Saver()
+    saver.save(sess, out_dirpath + 'model_sess.ckpt')
+
+    # # save model
+    # f = open(out_dirpath + 'model.textfile', 'w')
+    # pickle.dump(model, f)
+    # f.close
+    pickle.dump(model, open(out_dirpath + 'model.pickle', 'wb'))

@@ -13,6 +13,7 @@ from sklearn.model_selection import train_test_split
 CLIPPING_PERCENTILE = 97
 FEATURE_SCALING_OPT = 'minmax'
 
+
 def data_preproc_base(df_X):
     """
     preprocess data for all data

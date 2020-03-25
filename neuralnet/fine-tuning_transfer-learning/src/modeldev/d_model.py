@@ -11,16 +11,20 @@ parent_parent_dir = path.abspath(path.join(parent_dir, pardir))
 sys.path.append(parent_dir)
 
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 from sklearn.utils import shuffle
 from sklearn.metrics import f1_score
+from sklearn.metrics import r2_score
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
 
 from modeldev import d_layer
 from mylib import utils
 
 rng = np.random.RandomState(1000)
-random_state = 50
+random_state = 4
 
 
 class Model(object):
@@ -49,7 +53,7 @@ class Model(object):
                  mlp_optimizer,
                  mlp_epochs):
                  """
-                 Network initialization
+                 network initialization
                  """
 
                  self.latent_dim = vae_layer_dim_list[len(vae_layer_dim_list) - 1]
@@ -72,8 +76,14 @@ class Model(object):
                  self.mlp_optimizer = mlp_optimizer
                  self.mlp_epochs = mlp_epochs
 
+                 # set others
+                 self.flag_error_disp = False
+                 self.disp_step = 1
+                 self.learning_method = 'transfer-learning'
+
                  # build model
                  self._build_model()
+
 
     def _build_model(self):
         """
@@ -150,11 +160,6 @@ class Model(object):
 
         self.reconst_x = self._decode(self.z)
 
-        # TODO:
-        # [] save vae_reconst_loss
-        # [] save kld
-        # [] save vae_loss
-        # [] consder coefficient of "kld"
         self.vae_reconst_loss = self.vae_loss_func(self.x, self.reconst_x)  # reconstruction error
         self.kld = tf.reduce_mean(1 / 2 * (-2 * self.log_sigma + tf.exp(self.log_sigma)**2 + self.mu**2 - 1))  # kl divergence
         self.vae_loss = self.vae_reconst_loss + self.vae_kld_coef * self.kld
@@ -163,7 +168,7 @@ class Model(object):
 
     def _build_mlp_model(self):
         """
-        build Simple Multilayer Perceptron Model
+        build Simple Multilayer Perceptron Model that an input is latent of VAE
         """
         
         # define MLP layers
@@ -176,9 +181,11 @@ class Model(object):
                                              'b_' + 'm' + str(i)))
 
         # encode input with parameters which VAE model outputs
-        # TODO: implement "switch" or something to change "transfer learning" or "fine tuning"
-        self.encoded_x = self._encode_const_param(self.x)  # transfer learning
-        # self.encoded_x = self._encode(self.x)  # fine tuning
+        # select "transfer learning" or "fine tuning"
+        if (self.learning_method == 'transfer-learning'):
+            self.encoded_x = self._encode_const_param(self.x)
+        elif (self.learning_method == 'fine-tuning'):
+            self.encoded_x = self._encode(self.x)
 
         # define graph
         u = self.encoded_x
@@ -193,6 +200,9 @@ class Model(object):
     def _encode(self, x):
         """
         encoder of VAE
+
+        :param  x: tensor
+        :return
         """
         u = x
         for i, encode_layer in enumerate(self.encoder_layers):
@@ -207,6 +217,9 @@ class Model(object):
     def _decode(self, z):
         """
         decoder of VAE
+
+        :param  z: tensor
+        :return
         """
         u = z
         for i, decoder_layer in enumerate(self.decoder_layers):
@@ -218,6 +231,9 @@ class Model(object):
     def _keep_encoder_param(self, sess):
         """
         keep encoder parameters when you use transfer learning
+
+        :param  sess: tf.Session()
+        :return
         """
         for i in range(len(self.vae_layer_type_list)):
             W_enc = sess.run(self.encoder_layers[i].W)
@@ -230,6 +246,9 @@ class Model(object):
     def _encode_const_param(self, x):
         """
         encode input feature with constant parameters of encoder for transfer learning
+
+        :param  x: tensor
+        :return
         """
         u = x
         for i in range(len(self.W_enc_const)):
@@ -238,48 +257,171 @@ class Model(object):
         return z
 
 
-    def vae_fit(self, sess, train_X, valid_X, flag_error_disp=True):
+    def vae_fit(self, sess, train_X, valid_X):
         """
         fit parameters of vae model
+
+        :param  sess   : tf.Session()
+        :param  train_X: ndarray
+        :param  valid_X: ndarray
         """
+        # initialize error list
+        epoch_list = []
+        vae_error_list = []
+        vae_reconst_error_list = []
+        kld_list = []
+
+        vae_reconst_error_mse_test_list = []
+        vae_reconst_error_mae_test_list = []
+        vae_reconst_error_r2_test_list = []
+
+        vae_reconst_error_mse_train_list = []
+        vae_reconst_error_mae_train_list = []
+        vae_reconst_error_r2_train_list = []
 
         for epoch in range(self.vae_epochs):
+            #* Train *#
             sess.run(self.vae_train, feed_dict={self.x:train_X})
 
-            if (flag_error_disp is True):
-                vae_error = sess.run(self.vae_loss, feed_dict={self.x:valid_X})
-                vae_reconst_error = sess.run(self.vae_reconst_loss, feed_dict={self.x:valid_X})
-                kld = sess.run(self.kld, feed_dict={self.x:valid_X})
+            #* Calculate Error *#
+            epoch_list.append(epoch)
+
+            # vae error
+            vae_error = sess.run(self.vae_loss, feed_dict={self.x:valid_X})
+            vae_reconst_error = sess.run(self.vae_reconst_loss, feed_dict={self.x:valid_X})
+            kld = sess.run(self.kld, feed_dict={self.x:valid_X})
+
+            vae_error_list.append(vae_error)
+            vae_reconst_error_list.append(vae_reconst_error)
+            kld_list.append(kld)
+
+            # test error
+            reconst_x_test = sess.run(self.reconst_x, feed_dict={self.x:valid_X})
+            vae_reconst_error_mse_test = mean_squared_error(valid_X, reconst_x_test)
+            vae_reconst_error_mae_test = mean_absolute_error(valid_X, reconst_x_test)
+            vae_reconst_error_r2_test = r2_score(valid_X, reconst_x_test)
+
+            vae_reconst_error_mse_test_list.append(vae_reconst_error_mse_test)
+            vae_reconst_error_mae_test_list.append(vae_reconst_error_mae_test)
+            vae_reconst_error_r2_test_list.append(vae_reconst_error_r2_test)
+
+            # train error
+            reconst_x_train = sess.run(self.reconst_x, feed_dict={self.x:train_X})
+            vae_reconst_error_mse_train = mean_squared_error(train_X, reconst_x_train)
+            vae_reconst_error_mae_train = mean_absolute_error(train_X, reconst_x_train)
+            vae_reconst_error_r2_train = r2_score(train_X, reconst_x_train)
+
+            vae_reconst_error_mse_train_list.append(vae_reconst_error_mse_train)
+            vae_reconst_error_mae_train_list.append(vae_reconst_error_mae_train)
+            vae_reconst_error_r2_train_list.append(vae_reconst_error_r2_train)
+
+            if (self.flag_error_disp is True
+                and (   (epoch % self.disp_step == 0)
+                     or (epoch == self.mlp_epochs-1))):
                 print('EPOCH:{}, VAE ERROR:{} (RECONST:{}, KLD:{})'.format(epoch+1, vae_error, vae_reconst_error, kld))
+            
+        # save epoch-error results
+        self.vae_epoch_error = pd.DataFrame({'epoch': epoch_list,
+                                             'vae_error': vae_error_list,
+                                             'vae_reconst_error': vae_reconst_error_list,
+                                             'kld': kld_list,
+                                             'vae_reconst_error_mse_test': vae_reconst_error_mse_test_list,
+                                             'vae_reconst_error_mae_test': vae_reconst_error_mae_test_list,
+                                             'vae_reconst_error_r2_test': vae_reconst_error_r2_test_list,
+                                             'vae_reconst_error_mse_train': vae_reconst_error_mse_train_list,
+                                             'vae_reconst_error_mae_train': vae_reconst_error_mae_train_list,
+                                             'vae_reconst_error_r2_train': vae_reconst_error_r2_train_list})
         
         return sess
 
 
-    def mlp_fit(self, sess, train_X, train_y, valid_X, valid_y, flag_error_disp=True):
+    def mlp_fit(self, sess, train_X, train_y, valid_X, valid_y):
         """
         fit parameters of mlp model
+
+        :param  sess   : tf.Session()
+        :param  train_X: ndarray
+        :param  train_y: ndarray
+        :param  valid_X: ndarray
+        :param  valid_y: ndarray
         """
+        # initialize error list
+        epoch_list = []
+        mlp_error_list = []
+
+        mlp_error_mse_test_list = []
+        mlp_error_mae_test_list = []
+        mlp_error_r2_test_list = []
+
+        mlp_error_mse_train_list = []
+        mlp_error_mae_train_list = []
+        mlp_error_r2_train_list = []
+
         for epoch in range(self.mlp_epochs):
+            #* Train *#
             sess.run(self.mlp_train, feed_dict={self.x:train_X, self.t:train_y})
 
-            if (flag_error_disp is True):
-                mlp_error = sess.run(self.mlp_loss, feed_dict={self.x:valid_X, self.t:valid_y})
+            #* Calculate Error *#
+            epoch_list.append(epoch)
+            
+            # mlp error
+            mlp_error = sess.run(self.mlp_loss, feed_dict={self.x:valid_X, self.t:valid_y})
+            mlp_error_list.append(mlp_error)
+
+            # # test error
+            pred_y_test = sess.run(self.y, feed_dict={self.x:valid_X})
+            mlp_error_mse_test = mean_squared_error(valid_y, pred_y_test)
+            mlp_error_mae_test = mean_absolute_error(valid_y, pred_y_test)
+            mlp_error_r2_test = r2_score(valid_y, pred_y_test)
+
+            mlp_error_mse_test_list.append(mlp_error_mse_test)
+            mlp_error_mae_test_list.append(mlp_error_mae_test)
+            mlp_error_r2_test_list.append(mlp_error_r2_test)
+
+            # # train error
+            pred_y_train = sess.run(self.y, feed_dict={self.x:train_X})
+            mlp_error_mse_train = mean_squared_error(train_y, pred_y_train)
+            mlp_error_mae_train = mean_absolute_error(train_y, pred_y_train)
+            mlp_error_r2_train = r2_score(train_y, pred_y_train)
+
+            mlp_error_mse_train_list.append(mlp_error_mse_train)
+            mlp_error_mae_train_list.append(mlp_error_mae_train)
+            mlp_error_r2_train_list.append(mlp_error_r2_train)
+
+            if (self.flag_error_disp is True
+                and (   (epoch % self.disp_step == 0)
+                     or (epoch == self.mlp_epochs-1))):
                 print('EPOCH:{}, MLP ERROR:{}'.format(epoch+1, mlp_error))
+
+        # save epoch-error results
+        self.mlp_epoch_error = pd.DataFrame({'epoch': epoch_list,
+                                             'mlp_error': mlp_error_list,
+                                             'mlp_error_mse_test': mlp_error_mse_test_list,
+                                             'mlp_error_mae_test': mlp_error_mae_test_list,
+                                             'mlp_error_r2_test': mlp_error_r2_test_list,
+                                             'mlp_error_mse_train': mlp_error_mse_train_list,
+                                             'mlp_error_mae_train': mlp_error_mae_train_list,
+                                             'mlp_error_r2_train': mlp_error_r2_train_list})
 
         return sess
 
 
     def fit(self, sess, train_X, train_y, valid_X, valid_y):
         """
-        fit parameters
-        """
+        fit parameters with VAE and MLP
 
+        :param  sess   : tf.Session()
+        :param  train_X: ndarray
+        :param  train_y: ndarray
+        :param  valid_X: ndarray
+        :param  valid_y: ndarray
+        """
         # pre training with VAE for extracting important input feature
-        sess = self.vae_fit(sess, train_X, valid_X, True)
+        sess = self.vae_fit(sess, train_X, valid_X)
         sess = self._keep_encoder_param(sess)
 
         # training with MLP using part of VAE layers
-        sess = self.mlp_fit(sess, train_X, train_y, valid_X, valid_y, True)
+        sess = self.mlp_fit(sess, train_X, train_y, valid_X, valid_y)
 
         return sess
 
@@ -287,8 +429,28 @@ class Model(object):
     def predict(self, sess, test_X):
         """
         predicttion
+
+        :param  sess  : tf.Session()
+        :param  test_X: ndarray
+        :return
         """
         pred = sess.run(self.y, feed_dict={self.x:test_X})
 
         return pred
     
+
+    def set_train_opt(self, **kwargs):
+        """
+        set training option
+
+        :param  in_flag_error_disp: bool, error diplay
+        :param  disp_step         : int, display error every "disp step"
+        :param  learning_method   : str, "transfer-learning" or "fine-tuning"
+        :return 
+        """
+        if ('flag_error_disp' in kwargs):
+            self.flag_error_disp = kwargs['flag_error_disp']
+        if ('disp_step' in kwargs):
+            self.disp_step = kwargs['disp_step']
+        if ('learning_method' in kwargs):
+            self.learning_method = kwargs['learning_method']

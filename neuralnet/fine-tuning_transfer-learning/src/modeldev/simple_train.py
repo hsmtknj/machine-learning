@@ -1,16 +1,6 @@
 """
-Implement simple training
+Simple Training
 """
-
-#* Import Libraries *#
-import numpy as np
-import pandas as pd
-import tensorflow as tf
-from matplotlib import pyplot as plt
-from sklearn.utils import shuffle
-from sklearn.metrics import f1_score
-from sklearn.model_selection import train_test_split
-
 #* Register src directory path to PYTHONPATH *#
 import sys
 from os import path, pardir
@@ -18,6 +8,20 @@ current_dir = path.abspath(path.dirname(__file__))
 parent_dir = path.abspath(path.join(current_dir, pardir))
 parent_parent_dir = path.abspath(path.join(parent_dir, pardir))
 sys.path.append(parent_dir)
+
+#* Import Libraries *#
+import numpy as np
+import pandas as pd
+import time
+import os
+import tensorflow as tf
+from matplotlib import pyplot as plt
+from sklearn.utils import shuffle
+from sklearn.metrics import f1_score
+from sklearn.metrics import r2_score
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
+from sklearn.model_selection import train_test_split
 
 #* Import my Libraries *#
 from mylib import utils
@@ -27,7 +31,7 @@ from modeldev import d_model
 from modeldev import d_loss_func
 from modeldev import d_calc_loss_func
 
-#* Set params *#
+#* Set Params *#
 # general params
 random_state = 50
 test_size_ratio = 0.1
@@ -48,12 +52,21 @@ mlp_loss_func = tf.losses.mean_squared_error
 mlp_optimizer = tf.train.AdamOptimizer
 mlp_epochs = 10
 
+# traiing option params
+FLAG_ERROR_DISP = True
+DISP_STEP = 4
+
+# others
+out_dirpath = parent_parent_dir + '/data/results/result/'
+
 
 def simple_train_main():
+    start_time = time.time()
 
     # load data
     dirname = parent_parent_dir + '/data/dataset'
     df_X, df_y = utils.load_dataset_X_y(dirname, 'pd')
+
 
     # ======================================================================= #
     # Data Preprocesing
@@ -100,6 +113,9 @@ def simple_train_main():
                           mlp_loss_func,
                           mlp_optimizer,
                           mlp_epochs)
+    model.set_train_opt(flag_error_disp=FLAG_ERROR_DISP,
+                        disp_step=DISP_STEP,
+                        learning_method='transfer-learning')
 
     sess = tf.Session()
     init = tf.global_variables_initializer()
@@ -108,11 +124,26 @@ def simple_train_main():
     # train
     sess = model.fit(sess, df_train_X.values, df_train_y.values,
                            df_valid_X.values, df_valid_y.values)
+
+
+    # ======================================================================= #
+    # Predict and Save Result
+    # ======================================================================= #
+
+    # TODO: save result and model
+    utils.save_result(sess, model, out_dirpath)
+
+    # show error
     pred = model.predict(sess, df_test_X.values)
+    mse = mean_squared_error(df_test_y.values, pred)
+    rmse = np.sqrt(mean_squared_error(df_test_y.values, pred))
+    print('mse : {}'.format(mse))
+    print('rmse: {}'.format(rmse))
 
-    error = np.mean((df_test_y.values - pred)**2)
-    print('ERROR:{}'.format(error))
-
+    # end
+    stop_time = time.time()
+    elapsed_time = stop_time - start_time
+    print('Elapsed Time:' + str(elapsed_time) + ' [sec]')
     print('END')
 
 
